@@ -10,6 +10,16 @@
 <body>
 <div class="container mt-5">
     <h2>代码生成器</h2>
+    
+    <!-- 生成结果展示区域 -->
+    <div id="generationResult" class="mt-4" style="display: none;">
+        <h4>生成结果</h4>
+        <div class="list-group">
+            <!-- 文件状态列表 -->
+            <div id="fileStatusList"></div>
+        </div>
+    </div>
+
     <form id="generatorForm" onsubmit="return false;">
         <div class="form-group">
             <label for="tableName">表名称</label>
@@ -99,7 +109,7 @@
                         <div class="diff-container">
                             <div class="row">
                                 <div class="col-md-4">
-                                    <h6>现有代码</h6>
+                                    <h6>本地版本</h6>
                                     <div class="code-view" id="oldCode"></div>
                                 </div>
                                 <div class="col-md-4">
@@ -107,7 +117,7 @@
                                     <div class="code-view" id="mergedCode" contenteditable="true"></div>
                                 </div>
                                 <div class="col-md-4">
-                                    <h6>新生成代码</h6>
+                                    <h6>远程版本</h6>
                                     <div class="code-view" id="newCode"></div>
                                 </div>
                             </div>
@@ -116,12 +126,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <div class="btn-group">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-danger" onclick="useOldVersion()">使用现有代码</button>
-                    <button type="button" class="btn btn-primary" onclick="useNewVersion()">使用新代码</button>
-                    <button type="button" class="btn btn-success" onclick="saveMerge()">保存合并结果</button>
-                </div>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success" onclick="saveMerge()">应用更改</button>
             </div>
         </div>
     </div>
@@ -167,10 +173,10 @@ $(document).ready(function() {
             success: function(response) {
                 console.log('收到响应:', response);
                 if (response.success) {
+                    showGenerationResult(response.files, []);
                     alert('代码生成成功！');
                 } else if (response.needMerge) {
-                    console.log('需要合并文件:', response.diffs);
-                    showDiff(response.diffs);
+                    showGenerationResult(response.files, response.diffs);
                 } else {
                     alert('代码生成失败：' + response.message);
                 }
@@ -239,12 +245,13 @@ function updateProgress() {
         .text(`${processed}/${total} 文件已处理`);
 }
 
-function showDiff(diffs) {
-    currentDiffs = diffs;
+function showDiff(diff) {
+    // 初始化当前差异
+    currentDiffs = [diff];
     fileStatuses.clear();
     
     let fileListHtml = '';
-    diffs.forEach((diff, index) => {
+    currentDiffs.forEach((diff, index) => {
         const fileName = getFileDisplayName(diff.path);
         const status = diff.oldContent ? 'modified' : 'new';
         fileStatuses.set(index, 'pending');
@@ -268,8 +275,8 @@ function showDiff(diffs) {
     $('#fileList').html(fileListHtml);
     
     // 显示第一个文件的差异
-    if (diffs.length > 0) {
-        showFileDiff(diffs[0], 0);
+    if (currentDiffs.length > 0) {
+        showFileDiff(currentDiffs[0], 0);
     }
     
     // 绑定文件列表点击事件
@@ -278,7 +285,7 @@ function showDiff(diffs) {
         const index = $(this).data('index');
         $('.file-list-item').removeClass('active');
         $(this).addClass('active');
-        showFileDiff(diffs[index], index);
+        showFileDiff(currentDiffs[index], index);
     });
     
     $('#diffModal').modal('show');
@@ -295,7 +302,7 @@ function showFileDiff(diff, index) {
             <span class="line-number">${i + 1}</span>
             <span class="line-content">${escapeHtml(line)}</span>
             <div class="merge-controls">
-                <button class="btn btn-sm btn-outline-primary" onclick="useOldLine(${index}, ${i + 1})">使用此行</button>
+                <button class="arrow-button" onclick="useOldLine(${index}, ${i + 1})">→</button>
             </div>
         </div>`;
     });
@@ -308,52 +315,50 @@ function showFileDiff(diff, index) {
             <span class="line-number">${i + 1}</span>
             <span class="line-content">${escapeHtml(line)}</span>
             <div class="merge-controls">
-                <button class="btn btn-sm btn-outline-primary" onclick="useNewLine(${index}, ${i + 1})">使用此行</button>
+                <button class="arrow-button" onclick="useNewLine(${index}, ${i + 1})">←</button>
             </div>
         </div>`;
     });
     $('#newCode').html(newHtml);
     
-    // 初始化合并结果为新代码
-    $('#mergedCode').html(newHtml);
-}
-
-function useOldVersion() {
-    const currentIndex = $('.file-list-item.active').data('index');
-    const diff = currentDiffs[currentIndex];
-    $('#mergedCode').html($('#oldCode').html());
-    updateFileStatus(currentIndex, 'old');
-}
-
-function useNewVersion() {
-    const currentIndex = $('.file-list-item.active').data('index');
-    const diff = currentDiffs[currentIndex];
-    $('#mergedCode').html($('#newCode').html());
-    updateFileStatus(currentIndex, 'new');
+    // 初始化合并结果
+    let mergedHtml = '';
+    newLines.forEach((line, i) => {
+        const isDifferent = i < oldLines.length && oldLines[i] !== line;
+        const className = isDifferent ? 'diff-line conflict' : 'diff-line';
+        mergedHtml += `<div class="${className}" data-line="${i + 1}">
+            <span class="line-number">${i + 1}</span>
+            <span class="line-content" contenteditable="true">${escapeHtml(line)}</span>
+        </div>`;
+    });
+    $('#mergedCode').html(mergedHtml);
 }
 
 function useOldLine(fileIndex, lineNumber) {
-    const oldLine = $(`#oldCode .diff-line[data-line="${lineNumber}"]`).clone();
-    $(`#mergedCode .diff-line[data-line="${lineNumber}"]`).replaceWith(oldLine);
-    updateFileStatus(fileIndex, 'merged');
+    const oldLine = $(`#oldCode .diff-line[data-line="${lineNumber}"] .line-content`).text();
+    $(`#mergedCode .diff-line[data-line="${lineNumber}"] .line-content`).text(oldLine);
+    $(`#mergedCode .diff-line[data-line="${lineNumber}"]`).removeClass('conflict');
 }
 
 function useNewLine(fileIndex, lineNumber) {
-    const newLine = $(`#newCode .diff-line[data-line="${lineNumber}"]`).clone();
-    $(`#mergedCode .diff-line[data-line="${lineNumber}"]`).replaceWith(newLine);
-    updateFileStatus(fileIndex, 'merged');
+    const newLine = $(`#newCode .diff-line[data-line="${lineNumber}"] .line-content`).text();
+    $(`#mergedCode .diff-line[data-line="${lineNumber}"] .line-content`).text(newLine);
+    $(`#mergedCode .diff-line[data-line="${lineNumber}"]`).removeClass('conflict');
 }
 
 function saveMerge() {
-    const mergedContent = $('#mergedCode').text();
-    const currentIndex = $('.file-list-item.active').data('index');
-    const diff = currentDiffs[currentIndex];
+    // 收集合并后的内容
+    let mergedContent = '';
+    $('#mergedCode .line-content').each(function() {
+        mergedContent += $(this).text() + '\n';
+    });
+    
+    // 去除最后一个换行符
+    mergedContent = mergedContent.slice(0, -1);
     
     const mergeRequest = {
         files: [{
-            path: diff.path,
-            useOld: false,
-            useNew: false,
+            path: currentDiffs[0].path,
             mergedContent: mergedContent
         }]
     };
@@ -365,14 +370,23 @@ function saveMerge() {
         data: JSON.stringify(mergeRequest),
         success: function(response) {
             if (response.success) {
-                alert('保存成功！');
-                updateFileStatus(currentIndex, 'merged');
+                // 更新文件状态显示
+                $(`.file-item[data-path="${currentDiffs[0].path}"]`)
+                    .find('.file-status')
+                    .removeClass('status-conflict')
+                    .addClass('status-success')
+                    .end()
+                    .find('.badge')
+                    .remove();
+                
+                $('#diffModal').modal('hide');
+                alert('合并成功！');
             } else {
-                alert('保存失败：' + response.message);
+                alert('合并失败：' + response.message);
             }
         },
         error: function(xhr, status, error) {
-            alert('保存失败：' + error);
+            alert('合并失败：' + error);
         }
     });
 }
@@ -384,6 +398,32 @@ function escapeHtml(unsafe) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+// 添加显示生成结果的函数
+function showGenerationResult(files, conflicts) {
+    const conflictMap = new Map(conflicts.map(c => [c.path, c]));
+    
+    let html = '';
+    files.forEach(file => {
+        const conflict = conflictMap.get(file.path);
+        const status = conflict ? 'conflict' : 'success';
+        const onClick = conflict ? `onclick="showDiff(${JSON.stringify(conflict)})"` : '';
+        
+        html += `
+            <div class="file-item" ${onClick}>
+                <span class="file-status status-${status}"></span>
+                <div class="file-info">
+                    <div class="file-name">${file.path.split('/').pop()}</div>
+                    <small class="text-muted">${file.path}</small>
+                </div>
+                ${conflict ? '<span class="badge badge-danger ml-auto">需要合并</span>' : ''}
+            </div>
+        `;
+    });
+    
+    $('#fileStatusList').html(html);
+    $('#generationResult').show();
 }
 </script>
 
@@ -445,5 +485,109 @@ function escapeHtml(unsafe) {
 
 .diff-line:hover .merge-controls {
     display: inline-block;
+}
+
+.diff-container {
+    position: relative;
+    height: 600px;
+}
+
+.code-view {
+    font-family: monospace;
+    white-space: pre;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 10px;
+    height: 100%;
+    overflow: auto;
+    position: relative;
+}
+
+.diff-line {
+    display: flex;
+    align-items: center;
+    padding: 2px 5px;
+    position: relative;
+}
+
+.diff-line:hover {
+    background-color: #f1f1f1;
+}
+
+.diff-line.conflict {
+    background-color: #ffe3e3;
+}
+
+.diff-line.added {
+    background-color: #e6ffe6;
+}
+
+.diff-line.removed {
+    background-color: #ffe6e6;
+}
+
+.line-number {
+    color: #999;
+    padding-right: 10px;
+    user-select: none;
+    min-width: 40px;
+}
+
+.line-content {
+    flex-grow: 1;
+    white-space: pre;
+}
+
+.merge-controls {
+    position: absolute;
+    right: 5px;
+    display: none;
+}
+
+.diff-line:hover .merge-controls {
+    display: block;
+}
+
+.arrow-button {
+    padding: 2px 6px;
+    margin: 0 2px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: #007bff;
+}
+
+.arrow-button:hover {
+    color: #0056b3;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
+
+.file-status {
+    margin-right: 10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-success {
+    background-color: #28a745;
+}
+
+.status-conflict {
+    background-color: #dc3545;
+    cursor: pointer;
+}
+
+.status-pending {
+    background-color: #ffc107;
 }
 </style>

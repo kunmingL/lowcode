@@ -71,9 +71,9 @@ public class GeneratorServiceImpl implements GeneratorService {
                                    GeneratorRequest request, 
                                    TableInfo tableInfo, 
                                    String basePackage) throws Exception {
-        // 检查每个文件是否存在
+        // 检查所有需要生成的文件
         checkFileDiff(diffs, "dto.ftl", 
-            request.getApiModulePath() + "/" + tableInfo.getClassName() + "DTO.java", 
+            request.getApiModulePath() + "/" + tableInfo.getClassName() + "DTO.java",
             tableInfo, basePackage);
         
         checkFileDiff(diffs, "domain.ftl", 
@@ -339,15 +339,17 @@ public class GeneratorServiceImpl implements GeneratorService {
     private void generateFiles(TableInfo tableInfo, String basePackage) throws Exception {
         log.info("开始生成所有文件...");
         try {
+            // 生成所有文件
             generateDto(tableInfo, basePackage);
             generateDomain(tableInfo, basePackage);
             generateDtoDomainMapper(tableInfo, basePackage);
             generateMapper(tableInfo, basePackage);
             generatePo(tableInfo, basePackage);
             generateConverter(tableInfo, basePackage);
-            generateRepository(tableInfo, basePackage);    // 生成 Repository 接口
-            generateRepositoryImpl(tableInfo, basePackage); // 生成 Repository 实现类
+            generateRepository(tableInfo, basePackage);
+            generateRepositoryImpl(tableInfo, basePackage);
             generateMybatisXml(tableInfo, basePackage);
+            
             log.info("所有文件生成完成");
         } catch (Exception e) {
             log.error("文件生成失败", e);
@@ -374,7 +376,7 @@ public class GeneratorServiceImpl implements GeneratorService {
             case "dto-domain-mapper.ftl":
                 return basePackage + ".infrastructure.converter.dto";
             default:
-                return basePackage + ".infrastructure.dao"; // 默认用于 mapper.xml.ftl
+                return basePackage + ".infrastructure.dao";
         }
     }
 } 

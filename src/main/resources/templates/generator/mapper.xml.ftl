@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="${package}.${table.className}Mapper">
+<mapper namespace="${package}.${names.mapper}">
     
-    <resultMap id="BaseResultMap" type="${basePackage}.infrastructure.persistence.po.${table.className}PO">
+    <resultMap id="BaseResultMap" type="${basePackage}.infrastructure.persistence.po.${names.po}">
     <#list table.columns as column>
         <#if column.primaryKey>
         <id column="${column.columnName}" property="${column.fieldName}"/>
@@ -17,72 +17,36 @@
         <#list table.columns as column>${column.columnName}<#if column_has_next>, </#if></#list>
     </sql>
     
-    <select id="selectById" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM ${table.tableName}
-        WHERE 
+    <!-- 动态查询条件 -->
+    <sql id="Condition_Where_Clause">
+        <where>
         <#list table.columns as column>
-            <#if column.primaryKey>
-            ${column.columnName} = <#noparse>#{</#noparse>${column.fieldName}<#noparse>}</#noparse>
+            <#if column.javaType == "String">
+            <if test="condition.${column.fieldName} != null and condition.${column.fieldName} != ''">
+                AND ${column.columnName} LIKE CONCAT('%', <#noparse>#{condition.</#noparse>${column.fieldName}<#noparse>}</#noparse>, '%')
+            </if>
+            <#else>
+            <if test="condition.${column.fieldName} != null">
+                AND ${column.columnName} = <#noparse>#{condition.</#noparse>${column.fieldName}<#noparse>}</#noparse>
+            </if>
             </#if>
         </#list>
-    </select>
+        </where>
+    </sql>
     
-    <select id="selectList" resultMap="BaseResultMap">
+    <!-- 条件查询 -->
+    <select id="selectByCondition" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM ${table.tableName}
-        <where>
-            <if test="ew != null">
-                <#noparse>${ew.sqlSegment}</#noparse>
-            </if>
-        </where>
+        <include refid="Condition_Where_Clause"/>
     </select>
     
+    <!-- 分页条件查询 -->
     <select id="selectPage" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM ${table.tableName}
-        <where>
-            <if test="ew != null">
-                <#noparse>${ew.sqlSegment}</#noparse>
-            </if>
-        </where>
+        <include refid="Condition_Where_Clause"/>
     </select>
     
-    <insert id="insert" parameterType="${basePackage}.infrastructure.persistence.po.${table.className}PO">
-        INSERT INTO ${table.tableName} (
-            <include refid="Base_Column_List"/>
-        )
-        VALUES (
-        <#list table.columns as column>
-            <#noparse>#{</#noparse>${column.fieldName}<#noparse>}</#noparse><#if column_has_next>, </#if>
-        </#list>
-        )
-    </insert>
-    
-    <update id="updateById" parameterType="${basePackage}.infrastructure.persistence.po.${table.className}PO">
-        UPDATE ${table.tableName}
-        <set>
-        <#list table.columns as column>
-            <#if !column.primaryKey>
-            ${column.columnName} = <#noparse>#{</#noparse>${column.fieldName}<#noparse>}</#noparse><#if column_has_next>,</#if>
-            </#if>
-        </#list>
-        </set>
-        WHERE 
-        <#list table.columns as column>
-            <#if column.primaryKey>
-            ${column.columnName} = <#noparse>#{</#noparse>${column.fieldName}<#noparse>}</#noparse>
-            </#if>
-        </#list>
-    </update>
-    
-    <delete id="deleteById">
-        DELETE FROM ${table.tableName}
-        WHERE 
-        <#list table.columns as column>
-            <#if column.primaryKey>
-            ${column.columnName} = <#noparse>#{</#noparse>${column.fieldName}<#noparse>}</#noparse>
-            </#if>
-        </#list>
-    </delete>
+    <!-- 基础的增删改查由 MyBatis-Plus 提供 -->
 </mapper> 

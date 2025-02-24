@@ -4,590 +4,229 @@
     <title>代码生成器</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <!-- 使用正确的 CDN 路径 -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        body {
+            background-color: #2c3e50;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+        }
+        .generator-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            padding: 30px 40px;
+            width: 800px;
+        }
+        .section-title {
+            color: #2c3e50;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eee;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            font-weight: 500;
+            color: #34495e;
+            font-size: 16px;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .form-control {
+            border-radius: 6px;
+            border: 1px solid #dce4ec;
+            padding: 8px 12px;
+            font-size: 16px;
+            height: auto;
+            width: 100%;
+        }
+        .form-control:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 0.2rem rgba(52,152,219,0.25);
+        }
+        .form-control::placeholder {
+            color: #95a5a6;
+            font-size: 14px;
+        }
+        .btn-container {
+            text-align: center;
+            margin-top: 25px;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            border-color: #3498db;
+            padding: 12px 50px;
+            font-size: 18px;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52,152,219,0.3);
+        }
+    </style>
 </head>
 <body>
-<div class="container mt-5">
-    <h2>代码生成器</h2>
-    
-    <!-- 生成结果展示区域 -->
-    <div id="generationResult" class="mt-4" style="display: none;">
-        <h4>生成结果</h4>
-        <div class="list-group">
-            <!-- 文件状态列表 -->
-            <div id="fileStatusList"></div>
-        </div>
+    <div class="generator-container">
+        <form id="generatorForm">
+            <div class="section-title">基本配置</div>
+            <div class="form-group">
+                <label for="tableName">表名称</label>
+                <input type="text" class="form-control" id="tableName" required
+                       placeholder="请输入数据库表名">
+            </div>
+            <div class="form-group">
+                <label for="basePackage">基础包名</label>
+                <input type="text" class="form-control" id="basePackage" required
+                       placeholder="例如: com.example.project">
+            </div>
+
+            <div class="section-title">API模块配置</div>
+            <div class="form-group">
+                <label for="apiModulePath">API模块路径</label>
+                <input type="text" class="form-control" id="apiModulePath" required
+                       placeholder="例如: /Users/username/project/api/src/main/java">
+            </div>
+            <div class="form-group">
+                <label for="dtoDomainMapperPath">DTO-Domain转换器路径</label>
+                <input type="text" class="form-control" id="dtoDomainMapperPath" required
+                       placeholder="例如: /Users/username/project/api/src/main/java/converter/dto">
+            </div>
+
+            <div class="section-title">Service模块配置</div>
+            <div class="form-group">
+                <label for="serviceModulePath">Service模块路径</label>
+                <input type="text" class="form-control" id="serviceModulePath" required
+                       placeholder="例如: /Users/username/project/service/src/main/java">
+            </div>
+            <div class="form-group">
+                <label for="domainPath">Domain路径</label>
+                <input type="text" class="form-control" id="domainPath" required
+                       placeholder="例如: /Users/username/project/service/src/main/java/domain">
+            </div>
+            <div class="form-group">
+                <label for="daoPath">DAO路径</label>
+                <input type="text" class="form-control" id="daoPath" required
+                       placeholder="例如: /Users/username/project/service/src/main/java/dao">
+            </div>
+            <div class="form-group">
+                <label for="poPath">PO路径</label>
+                <input type="text" class="form-control" id="poPath" required
+                       placeholder="例如: /Users/username/project/service/src/main/java/po">
+            </div>
+            <div class="form-group">
+                <label for="converterPath">Converter路径</label>
+                <input type="text" class="form-control" id="converterPath" required
+                       placeholder="例如: /Users/username/project/service/src/main/java/converter">
+            </div>
+            <div class="form-group">
+                <label for="repositoryPath">Repository路径</label>
+                <input type="text" class="form-control" id="repositoryPath" required
+                       placeholder="例如: /Users/username/project/service/src/main/java/repository">
+            </div>
+            <div class="form-group">
+                <label for="repositoryImplPath">Repository实现类路径</label>
+                <input type="text" class="form-control" id="repositoryImplPath" required
+                       placeholder="例如: /Users/username/project/service/src/main/java/repository/impl">
+            </div>
+            <div class="form-group">
+                <label for="mybatisXmlPath">MyBatis XML文件路径</label>
+                <input type="text" class="form-control" id="mybatisXmlPath" required
+                       placeholder="例如: /Users/username/project/service/src/main/resources/mapper">
+            </div>
+
+            <div class="btn-container">
+                <button type="button" id="generateBtn" class="btn btn-primary">
+                    生成代码
+                </button>
+            </div>
+        </form>
     </div>
 
-    <form id="generatorForm" onsubmit="return false;">
-        <div class="form-group">
-            <label for="tableName">表名称</label>
-            <input type="text" class="form-control" id="tableName" name="tableName" required>
-        </div>
-        <div class="form-group">
-            <label for="basePackage">基础包路径</label>
-            <input type="text" class="form-control" id="basePackage" name="basePackage" 
-                   placeholder="例如: com.example.project" required>
-        </div>
-        
-        <h4 class="mt-4">API模块</h4>
-        <div class="form-group">
-            <label for="apiModulePath">API模块DTO路径</label>
-            <input type="text" class="form-control" id="apiModulePath" name="apiModulePath" 
-                   placeholder="例如: /project/api/src/main/java/com/example/api/dto" required>
-        </div>
-        
-        <h4 class="mt-4">Service模块</h4>
-        <div class="form-group">
-            <label for="serviceModulePath">Service模块基础路径</label>
-            <input type="text" class="form-control" id="serviceModulePath" name="serviceModulePath" 
-                   placeholder="例如: /project/service/src/main/java/com/example/service" required>
-        </div>
-        <div class="form-group">
-            <label for="domainPath">Domain生成路径</label>
-            <input type="text" class="form-control" id="domainPath" name="domainPath" 
-                   placeholder="例如: /Users/username/project/src/main/java/com/example/domain" required>
-        </div>
-        <div class="form-group">
-            <label for="dtoDomainMapperPath">DTO-Domain转换器路径</label>
-            <input type="text" class="form-control" id="dtoDomainMapperPath" name="dtoDomainMapperPath" 
-                   placeholder="例如: /Users/username/project/src/main/java/com/example/converter/dto" required>
-        </div>
-        <div class="form-group">
-            <label for="daoPath">数据访问层路径</label>
-            <input type="text" class="form-control" id="daoPath" name="daoPath" 
-                   placeholder="例如: /Users/username/project/src/main/java/com/example/dao" required>
-        </div>
-        <div class="form-group">
-            <label for="poPath">PO生成路径</label>
-            <input type="text" class="form-control" id="poPath" name="poPath" 
-                   placeholder="例如: /Users/username/project/src/main/java/com/example/po" required>
-        </div>
-        <div class="form-group">
-            <label for="converterPath">Converter生成路径</label>
-            <input type="text" class="form-control" id="converterPath" name="converterPath" 
-                   placeholder="例如: /Users/username/project/src/main/java/com/example/converter" required>
-        </div>
-        <div class="form-group">
-            <label for="repositoryPath">Repository接口路径</label>
-            <input type="text" class="form-control" id="repositoryPath" name="repositoryPath" 
-                   placeholder="例如: /Users/username/project/src/main/java/com/example/domain/repository" required>
-        </div>
-        <div class="form-group">
-            <label for="repositoryImplPath">Repository实现类路径</label>
-            <input type="text" class="form-control" id="repositoryImplPath" name="repositoryImplPath" 
-                   placeholder="例如: /Users/username/project/src/main/java/com/example/infrastructure/repository" required>
-        </div>
-        <div class="form-group">
-            <label for="mybatisXmlPath">MyBatis XML生成路径</label>
-            <input type="text" class="form-control" id="mybatisXmlPath" name="mybatisXmlPath" 
-                   placeholder="例如: /Users/username/project/src/main/resources/mapper" required>
-        </div>
-        <button type="button" class="btn btn-primary" id="generateBtn">生成代码</button>
-    </form>
-</div>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
 
-<!-- 在现有表单后添加 -->
-<div id="diffModal" class="modal fade" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">文件差异</h5>
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <!-- 左侧文件列表 -->
-                    <div class="col-md-2">
-                        <div class="list-group" id="fileList">
-                            <!-- 文件列表将在这里动态生成 -->
-                        </div>
-                    </div>
-                    <!-- 三栏对比区域 -->
-                    <div class="col-md-10">
-                        <div class="diff-container">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <h6>本地版本</h6>
-                                    <div class="code-view" id="oldCode"></div>
-                                </div>
-                                <div class="col-md-4">
-                                    <h6>合并结果</h6>
-                                    <div class="code-view" id="mergedCode" contenteditable="true"></div>
-                                </div>
-                                <div class="col-md-4">
-                                    <h6>远程版本</h6>
-                                    <div class="code-view" id="newCode"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-success" onclick="saveMerge()">应用更改</button>
-            </div>
-        </div>
-    </div>
-</div>
+    <script type="text/javascript">
+    $(document).ready(function() {
+        $('#generateBtn').on('click', function() {
+            const formData = {
+                tableName: $('#tableName').val(),
+                basePackage: $('#basePackage').val(),
+                apiModulePath: $('#apiModulePath').val(),
+                serviceModulePath: $('#serviceModulePath').val(),
+                domainPath: $('#domainPath').val(),
+                daoPath: $('#daoPath').val(),
+                poPath: $('#poPath').val(),
+                converterPath: $('#converterPath').val(),
+                repositoryPath: $('#repositoryPath').val(),
+                repositoryImplPath: $('#repositoryImplPath').val(),
+                mybatisXmlPath: $('#mybatisXmlPath').val(),
+                dtoDomainMapperPath: $('#dtoDomainMapperPath').val()
+            };
 
-<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+            console.log('发送的数据：', formData);
 
-<script type="text/javascript">
-// 等待 DOM 加载完成
-$(document).ready(function() {
-    // 绑定生成按钮点击事件
-    $('#generateBtn').click(function() {
-        // 获取表单数据
-        const formData = {
-            tableName: $('#tableName').val(),
-            basePackage: $('#basePackage').val(),
-            apiModulePath: $('#apiModulePath').val(),
-            serviceModulePath: $('#serviceModulePath').val(),
-            domainPath: $('#domainPath').val(),
-            dtoDomainMapperPath: $('#dtoDomainMapperPath').val(),
-            daoPath: $('#daoPath').val(),
-            poPath: $('#poPath').val(),
-            converterPath: $('#converterPath').val(),
-            repositoryPath: $('#repositoryPath').val(),
-            repositoryImplPath: $('#repositoryImplPath').val(),
-            mybatisXmlPath: $('#mybatisXmlPath').val()
-        };
-        
-        console.log('准备提交表单数据:', formData);
-        
-        // 发送 AJAX 请求
-        $.ajax({
-            url: '/generator/generate',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(formData),
-            beforeSend: function() {
-                console.log('发送请求...');
-            },
-            success: function(response) {
-                console.log('收到响应:', response);
-                if (response.success) {
-                    showGenerationResult(response.files, []);
-                    alert('代码生成成功！');
-                } else if (response.needMerge) {
-                    showGenerationResult(response.files, response.diffs);
-                } else {
-                    alert('代码生成失败：' + response.message);
+            const btn = $(this);
+            btn.prop('disabled', true)
+               .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 生成中...');
+
+            $.ajax({
+                url: '/generator/generate',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    btn.prop('disabled', false)
+                       .html('<i class="fas fa-code"></i> 生成代码');
+
+                    if (response.success) {
+                        Swal.fire({
+                            title: '成功',
+                            text: '代码生成成功！',
+                            icon: 'success',
+                            confirmButtonText: '确定'
+                        });
+                    } else if (response.needMerge) {
+                        window.open('/generator/diff?diffs=' + encodeURIComponent(JSON.stringify(response.diffs)), 
+                            'DiffWindow', 
+                            'width=1200,height=800,scrollbars=yes,resizable=yes');
+                    } else {
+                        Swal.fire({
+                            title: '错误',
+                            text: response.message || '代码生成失败',
+                            icon: 'error',
+                            confirmButtonText: '确定'
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('请求错误：', error);
+                    btn.prop('disabled', false)
+                       .html('<i class="fas fa-code"></i> 生成代码');
+
+                    Swal.fire({
+                        title: '错误',
+                        text: '请求失败: ' + error,
+                        icon: 'error',
+                        confirmButtonText: '确定'
+                    });
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('请求失败:', {
-                    status: status,
-                    error: error,
-                    response: xhr.responseText
-                });
-                alert('代码生成失败！错误信息：' + (xhr.responseJSON?.message || error));
-            }
+            });
         });
     });
-
-    // 防止表单默认提交
-    $('#generatorForm').submit(function(e) {
-        e.preventDefault();
-        return false;
-    });
-});
-
-let currentDiffs = [];
-let fileStatuses = new Map();
-
-function getFileDisplayName(path) {
-    const parts = path.split('/');
-    const fileName = parts[parts.length - 1];
-    const fileType = fileName.split('.').pop();
-    const displayTypes = {
-        'java': 'Java文件',
-        'xml': 'MyBatis映射文件'
-    };
-    return `${displayTypes[fileType] || '文件'}: ${fileName}`;
-}
-
-function updateFileStatus(index, status) {
-    fileStatuses.set(index, status);
-    const fileItem = $(`.file-list-item[data-index="${index}"]`);
-    const statusIcon = fileItem.find('.file-status-icon');
-    
-    // 更新状态图标
-    statusIcon.removeClass('status-pending status-old status-new status-merged')
-        .addClass(`status-${status}`);
-    
-    // 更新状态文本
-    const statusTexts = {
-        'pending': '待处理',
-        'old': '使用原版本',
-        'new': '使用新版本',
-        'merged': '已合并'
-    };
-    fileItem.find('.file-status-text').text(statusTexts[status]);
-    updateProgress();
-}
-
-function updateProgress() {
-    const total = fileStatuses.size;
-    const processed = Array.from(fileStatuses.values())
-        .filter(status => status !== 'pending').length;
-    
-    const percentage = (processed / total) * 100;
-    $('.progress-bar')
-        .css('width', `${percentage}%`)
-        .attr('aria-valuenow', percentage)
-        .text(`${processed}/${total} 文件已处理`);
-}
-
-function showDiff(diff) {
-    // 初始化当前差异
-    currentDiffs = [diff];
-    fileStatuses.clear();
-    
-    let fileListHtml = '';
-    currentDiffs.forEach((diff, index) => {
-        const fileName = getFileDisplayName(diff.path);
-        const status = diff.oldContent ? 'modified' : 'new';
-        fileStatuses.set(index, 'pending');
-        
-        fileListHtml += `
-            <a href="#" class="list-group-item file-list-item ${index === 0 ? 'active' : ''}" 
-               data-index="${index}">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="file-status status-${status}"></span>
-                        ${fileName}
-                    </div>
-                    <div>
-                        <span class="file-status-icon status-pending"></span>
-                        <small class="file-status-text text-muted">待处理</small>
-                    </div>
-                </div>
-            </a>
-        `;
-    });
-    $('#fileList').html(fileListHtml);
-    
-    // 显示第一个文件的差异
-    if (currentDiffs.length > 0) {
-        showFileDiff(currentDiffs[0], 0);
-    }
-    
-    // 绑定文件列表点击事件
-    $('.file-list-item').click(function(e) {
-        e.preventDefault();
-        const index = $(this).data('index');
-        $('.file-list-item').removeClass('active');
-        $(this).addClass('active');
-        showFileDiff(currentDiffs[index], index);
-    });
-    
-    $('#diffModal').modal('show');
-}
-
-function showFileDiff(diff, index) {
-    const oldLines = diff.oldContent ? diff.oldContent.split('\n') : [];
-    const newLines = diff.newContent.split('\n');
-    
-    // 显示原始代码
-    let oldHtml = '';
-    oldLines.forEach((line, i) => {
-        oldHtml += `<div class="diff-line" data-line="${i + 1}">
-            <span class="line-number">${i + 1}</span>
-            <span class="line-content">${escapeHtml(line)}</span>
-            <div class="merge-controls">
-                <button class="arrow-button" onclick="useOldLine(${index}, ${i + 1})">→</button>
-            </div>
-        </div>`;
-    });
-    $('#oldCode').html(oldHtml);
-    
-    // 显示新代码
-    let newHtml = '';
-    newLines.forEach((line, i) => {
-        newHtml += `<div class="diff-line" data-line="${i + 1}">
-            <span class="line-number">${i + 1}</span>
-            <span class="line-content">${escapeHtml(line)}</span>
-            <div class="merge-controls">
-                <button class="arrow-button" onclick="useNewLine(${index}, ${i + 1})">←</button>
-            </div>
-        </div>`;
-    });
-    $('#newCode').html(newHtml);
-    
-    // 初始化合并结果
-    let mergedHtml = '';
-    newLines.forEach((line, i) => {
-        const isDifferent = i < oldLines.length && oldLines[i] !== line;
-        const className = isDifferent ? 'diff-line conflict' : 'diff-line';
-        mergedHtml += `<div class="${className}" data-line="${i + 1}">
-            <span class="line-number">${i + 1}</span>
-            <span class="line-content" contenteditable="true">${escapeHtml(line)}</span>
-        </div>`;
-    });
-    $('#mergedCode').html(mergedHtml);
-}
-
-function useOldLine(fileIndex, lineNumber) {
-    const oldLine = $(`#oldCode .diff-line[data-line="${lineNumber}"] .line-content`).text();
-    $(`#mergedCode .diff-line[data-line="${lineNumber}"] .line-content`).text(oldLine);
-    $(`#mergedCode .diff-line[data-line="${lineNumber}"]`).removeClass('conflict');
-}
-
-function useNewLine(fileIndex, lineNumber) {
-    const newLine = $(`#newCode .diff-line[data-line="${lineNumber}"] .line-content`).text();
-    $(`#mergedCode .diff-line[data-line="${lineNumber}"] .line-content`).text(newLine);
-    $(`#mergedCode .diff-line[data-line="${lineNumber}"]`).removeClass('conflict');
-}
-
-function saveMerge() {
-    // 收集合并后的内容
-    let mergedContent = '';
-    $('#mergedCode .line-content').each(function() {
-        mergedContent += $(this).text() + '\n';
-    });
-    
-    // 去除最后一个换行符
-    mergedContent = mergedContent.slice(0, -1);
-    
-    const mergeRequest = {
-        files: [{
-            path: currentDiffs[0].path,
-            mergedContent: mergedContent
-        }]
-    };
-    
-    $.ajax({
-        url: '/generator/merge',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(mergeRequest),
-        success: function(response) {
-            if (response.success) {
-                // 更新文件状态显示
-                $(`.file-item[data-path="${currentDiffs[0].path}"]`)
-                    .find('.file-status')
-                    .removeClass('status-conflict')
-                    .addClass('status-success')
-                    .end()
-                    .find('.badge')
-                    .remove();
-                
-                $('#diffModal').modal('hide');
-                alert('合并成功！');
-            } else {
-                alert('合并失败：' + response.message);
-            }
-        },
-        error: function(xhr, status, error) {
-            alert('合并失败：' + error);
-        }
-    });
-}
-
-function escapeHtml(unsafe) {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-// 添加显示生成结果的函数
-function showGenerationResult(files, conflicts) {
-    const conflictMap = new Map(conflicts.map(c => [c.path, c]));
-    
-    let html = '';
-    files.forEach(file => {
-        const conflict = conflictMap.get(file.path);
-        const status = conflict ? 'conflict' : 'success';
-        const onClick = conflict ? `onclick="showDiff(${JSON.stringify(conflict)})"` : '';
-        
-        html += `
-            <div class="file-item" ${onClick}>
-                <span class="file-status status-${status}"></span>
-                <div class="file-info">
-                    <div class="file-name">${file.path.split('/').pop()}</div>
-                    <small class="text-muted">${file.path}</small>
-                </div>
-                ${conflict ? '<span class="badge badge-danger ml-auto">需要合并</span>' : ''}
-            </div>
-        `;
-    });
-    
-    $('#fileStatusList').html(html);
-    $('#generationResult').show();
-}
-</script>
-
-<style>
-.modal-xl {
-    max-width: 95%;
-    margin: 20px auto;
-}
-
-.code-view {
-    font-family: monospace;
-    white-space: pre;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    padding: 10px;
-    height: 600px;
-    overflow: auto;
-}
-
-.code-view[contenteditable="true"]:focus {
-    outline: 2px solid #007bff;
-    background-color: #fff;
-}
-
-.diff-line {
-    display: block;
-    position: relative;
-    padding: 0 5px;
-}
-
-.diff-line:hover {
-    background-color: #e9ecef;
-}
-
-.diff-line.added {
-    background-color: #e6ffe6;
-}
-
-.diff-line.removed {
-    background-color: #ffe6e6;
-}
-
-.diff-line.modified {
-    background-color: #fff3cd;
-}
-
-.line-number {
-    color: #6c757d;
-    margin-right: 10px;
-    user-select: none;
-}
-
-.merge-controls {
-    position: absolute;
-    right: 5px;
-    display: none;
-}
-
-.diff-line:hover .merge-controls {
-    display: inline-block;
-}
-
-.diff-container {
-    position: relative;
-    height: 600px;
-}
-
-.code-view {
-    font-family: monospace;
-    white-space: pre;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    padding: 10px;
-    height: 100%;
-    overflow: auto;
-    position: relative;
-}
-
-.diff-line {
-    display: flex;
-    align-items: center;
-    padding: 2px 5px;
-    position: relative;
-}
-
-.diff-line:hover {
-    background-color: #f1f1f1;
-}
-
-.diff-line.conflict {
-    background-color: #ffe3e3;
-}
-
-.diff-line.added {
-    background-color: #e6ffe6;
-}
-
-.diff-line.removed {
-    background-color: #ffe6e6;
-}
-
-.line-number {
-    color: #999;
-    padding-right: 10px;
-    user-select: none;
-    min-width: 40px;
-}
-
-.line-content {
-    flex-grow: 1;
-    white-space: pre;
-}
-
-.merge-controls {
-    position: absolute;
-    right: 5px;
-    display: none;
-}
-
-.diff-line:hover .merge-controls {
-    display: block;
-}
-
-.arrow-button {
-    padding: 2px 6px;
-    margin: 0 2px;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    color: #007bff;
-}
-
-.arrow-button:hover {
-    color: #0056b3;
-}
-
-.file-item {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    border: 1px solid #dee2e6;
-    margin-bottom: 5px;
-    border-radius: 4px;
-}
-
-.file-status {
-    margin-right: 10px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-.status-success {
-    background-color: #28a745;
-}
-
-.status-conflict {
-    background-color: #dc3545;
-    cursor: pointer;
-}
-
-.status-pending {
-    background-color: #ffc107;
-}
-</style>
+    </script>
+</body>
+</html>

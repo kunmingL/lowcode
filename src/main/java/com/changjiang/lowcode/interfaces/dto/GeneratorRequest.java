@@ -2,8 +2,12 @@ package com.changjiang.lowcode.interfaces.dto;
 
 import lombok.Data;
 import javax.validation.constraints.NotBlank;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class GeneratorRequest {
     @NotBlank(message = "表名不能为空")
     private String tableName;
@@ -40,4 +44,23 @@ public class GeneratorRequest {
     
     @NotBlank(message = "DTO-Domain转换器路径不能为空")
     private String dtoDomainMapperPath;
+
+    // 添加日志方法
+    @Override
+    public String toString() {
+        return "GeneratorRequest{" +
+                "tableName='" + tableName + '\'' +
+                ", basePackage='" + basePackage + '\'' +
+                ", apiModulePath='" + apiModulePath + '\'' +
+                ", serviceModulePath='" + serviceModulePath + '\'' +
+                ", domainPath='" + domainPath + '\'' +
+                ", daoPath='" + daoPath + '\'' +
+                ", poPath='" + poPath + '\'' +
+                ", converterPath='" + converterPath + '\'' +
+                ", repositoryPath='" + repositoryPath + '\'' +
+                ", repositoryImplPath='" + repositoryImplPath + '\'' +
+                ", mybatisXmlPath='" + mybatisXmlPath + '\'' +
+                ", dtoDomainMapperPath='" + dtoDomainMapperPath + '\'' +
+                '}';
+    }
 } 

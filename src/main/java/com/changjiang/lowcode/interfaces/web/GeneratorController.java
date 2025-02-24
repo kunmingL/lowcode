@@ -1,6 +1,7 @@
 package com.changjiang.lowcode.interfaces.web;
 
 import com.changjiang.lowcode.domain.service.GeneratorService;
+import com.changjiang.lowcode.infrastructure.service.FileDiffService;
 import com.changjiang.lowcode.interfaces.dto.GeneratorRequest;
 import com.changjiang.lowcode.interfaces.dto.MergeRequest;
 import com.changjiang.lowcode.interfaces.dto.MergeFileRequest;
@@ -13,6 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.server.ResponseStatusException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.List;
+import org.springframework.ui.Model;
 
 @Slf4j
 @Controller
@@ -30,13 +35,11 @@ public class GeneratorController {
     @PostMapping("/generate")
     @ResponseBody
     public Result generate(@RequestBody GeneratorRequest request) {
+        log.info("接收到的请求参数: {}", request);
         try {
-            log.info("接收到代码生成请求，参数: {}", request);
-            Result result = generatorService.generate(request);
-            log.info("代码生成完成，结果: {}", result);
-            return result;
+            return generatorService.generate(request);
         } catch (Exception e) {
-            log.error("代码生成失败", e);
+            log.error("生成代码失败", e);
             return Result.failure(e.getMessage());
         }
     }
@@ -66,6 +69,20 @@ public class GeneratorController {
         } catch (Exception e) {
             log.error("文件合并失败", e);
             return Result.failure(e.getMessage());
+        }
+    }
+
+    @GetMapping("/diff")
+    public String showDiff(@RequestParam String diffs, Model model) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<FileDiffService.DiffResult> diffResults = mapper.readValue(diffs,
+                new TypeReference<List<FileDiffService.DiffResult>>() {});
+            model.addAttribute("diffs", diffResults);
+            return "diff";
+        } catch (Exception e) {
+            log.error("解析差异数据失败", e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "无效的差异数据");
         }
     }
 }

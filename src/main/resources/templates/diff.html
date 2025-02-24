@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>文件差异对比</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .diff-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .title {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        .card {
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            font-weight: 500;
+        }
+        .diff-content {
+            padding: 15px;
+            background-color: #fafafa;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .btn-container {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .btn {
+            padding: 10px 30px;
+            font-weight: 500;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="diff-container">
+            <h3 class="title">文件差异对比</h3>
+            <div id="diffContent"></div>
+            <div class="btn-container">
+                <button class="btn btn-primary" onclick="confirmMerge()">确认合并</button>
+                <button class="btn btn-secondary" onclick="window.close()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const diffs = /*[[${diffs}]]*/ [];
+        
+        // 显示差异
+        function showDiff() {
+            const diffHtml = diffs.map(diff => {
+                return `
+                    <div class="card mb-3">
+                        <div class="card-header">${diff.path}</div>
+                        <div class="card-body">
+                            <pre class="diff-content">${diff.newContent}</pre>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('diffContent').innerHTML = diffHtml;
+        }
+        
+        // 确认合并
+        function confirmMerge() {
+            $.ajax({
+                url: '/generator/merge',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    files: diffs.map(diff => ({
+                        path: diff.path,
+                        useNew: true,
+                        newContent: diff.newContent
+                    }))
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        window.opener.Swal.fire({
+                            title: '成功',
+                            text: '文件合并成功！',
+                            icon: 'success',
+                            confirmButtonText: '确定'
+                        });
+                        window.close();
+                    } else {
+                        Swal.fire({
+                            title: '错误',
+                            text: response.message || '合并失败',
+                            icon: 'error',
+                            confirmButtonText: '确定'
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    Swal.fire({
+                        title: '错误',
+                        text: '请求失败: ' + error,
+                        icon: 'error',
+                        confirmButtonText: '确定'
+                    });
+                }
+            });
+        }
+        
+        // 初始化显示
+        showDiff();
+        /*]]>*/
+    </script>
+</body>
+</html> 

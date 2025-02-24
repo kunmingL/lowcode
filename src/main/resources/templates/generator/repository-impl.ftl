@@ -1,5 +1,8 @@
 package ${package};
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import ${basePackage}.domain.model.${names.domain};
 import ${basePackage}.domain.repository.${names.repository};
 import ${basePackage}.infrastructure.converter.${names.converter};
@@ -8,7 +11,11 @@ import ${basePackage}.infrastructure.dao.${names.mapper};
 import org.springframework.stereotype.Repository;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
+import org.springframework.util.StringUtils;
 
+/**
+ * ${table.comments!''} 仓储实现类
+ */
 @Repository
 @RequiredArgsConstructor
 public class ${names.repositoryImpl} implements ${names.repository} {
@@ -25,6 +32,27 @@ public class ${names.repositoryImpl} implements ${names.repository} {
     public List<${names.domain}> findAll() {
         List<${names.po}> poList = ${table.className?uncap_first}Mapper.selectList(null);
         return converter.toDomainList(poList);
+    }
+    
+    @Override
+    public List<${names.domain}> findByCondition(${names.domain} condition) {
+        ${names.po} po = converter.toPO(condition);
+        List<${names.po}> poList = ${table.className?uncap_first}Mapper.selectByCondition(po);
+        return converter.toDomainList(poList);
+    }
+    
+    @Override
+    public IPage<${names.domain}> findByPage(int page, int size, ${names.domain} condition) {
+        Page<${names.po}> pageParam = new Page<>(page, size);
+        ${names.po} po = converter.toPO(condition);
+        
+        IPage<${names.po}> poPage = ${table.className?uncap_first}Mapper.selectPage(pageParam, po);
+        
+        // 转换分页结果
+        IPage<${names.domain}> domainPage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
+        domainPage.setRecords(converter.toDomainList(poPage.getRecords()));
+        
+        return domainPage;
     }
     
     @Override

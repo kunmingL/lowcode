@@ -7,7 +7,7 @@ import ${basePackage}.domain.model.${names.domain};
 import ${basePackage}.domain.repository.${names.repository};
 import ${basePackage}.infrastructure.converter.${names.converter};
 import ${basePackage}.infrastructure.persistence.po.${names.po};
-import ${basePackage}.infrastructure.dao.${names.mapper};
+import ${daoPackage}.${names.mapper};
 import org.springframework.stereotype.Repository;
 import lombok.RequiredArgsConstructor;
 import java.util.List;

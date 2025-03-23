@@ -1,8 +1,12 @@
 package ${package};
 
 import ${basePackage}.domain.model.${names.domain};
+<#if framework == "jpa">
+import org.springframework.data.domain.Page;
+<#else>
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+</#if>
 import java.util.List;
 
 /**
@@ -33,7 +37,11 @@ public interface ${names.repository} {
      * @param condition 查询条件
      * @return 分页结果
      */
+    <#if framework == "jpa">
+    Page<${names.domain}> findByPage(int page, int size, ${names.domain} condition);
+    <#else>
     IPage<${names.domain}> findByPage(int page, int size, ${names.domain} condition);
+    </#if>
     
     /**
      * 保存

@@ -2,7 +2,6 @@ package ${package};
 
 import lombok.Data;
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.math.BigDecimal;
 
 /**

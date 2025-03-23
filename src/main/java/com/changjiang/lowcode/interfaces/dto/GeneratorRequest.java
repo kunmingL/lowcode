@@ -39,11 +39,13 @@ public class GeneratorRequest {
     @NotBlank(message = "Repository实现类路径不能为空")
     private String repositoryImplPath;
     
-    @NotBlank(message = "MyBatis XML路径不能为空")
     private String mybatisXmlPath;
     
     @NotBlank(message = "DTO-Domain转换器路径不能为空")
     private String dtoDomainMapperPath;
+    
+    // 添加框架选择字段
+    private String framework = "mybatis"; // 默认为mybatis
 
     // 添加日志方法
     @Override
@@ -61,6 +63,7 @@ public class GeneratorRequest {
                 ", repositoryImplPath='" + repositoryImplPath + '\'' +
                 ", mybatisXmlPath='" + mybatisXmlPath + '\'' +
                 ", dtoDomainMapperPath='" + dtoDomainMapperPath + '\'' +
+                ", framework='" + framework + '\'' +
                 '}';
     }
 } 

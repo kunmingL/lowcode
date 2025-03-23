@@ -3,7 +3,6 @@ package ${package};
 import lombok.Data;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.math.BigDecimal;
 
 /**

@@ -19,16 +19,16 @@
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(0,0,0,0.2);
-            padding: 30px 40px;
+            padding: 20px 30px;
             width: 800px;
         }
         .section-title {
             color: #2c3e50;
             font-size: 20px;
             font-weight: 600;
-            margin: 15px 0;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #eee;
+            margin: 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
         }
         .form-group {
             margin-bottom: 15px;
@@ -75,38 +75,66 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(52,152,219,0.3);
         }
+        
+        /* 添加持久化框架选择样式 */
+        .framework-selector {
+            display: flex;
+            margin: 15px 0;
+            justify-content: center;
+            gap: 30px;
+        }
+        .framework-option {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .framework-option input {
+            margin-right: 10px;
+        }
+        .framework-option label {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div class="generator-container">
         <form id="generatorForm">
+            <!-- 添加持久化框架选择 -->
+            <div class="section-title">持久化框架选择</div>
+            <div class="framework-selector">
+                <div class="framework-option">
+                    <input type="radio" id="mybatis" name="framework" value="mybatis" checked>
+                    <label for="mybatis">MyBatis</label>
+                </div>
+                <div class="framework-option">
+                    <input type="radio" id="jpa" name="framework" value="jpa">
+                    <label for="jpa">JPA</label>
+                </div>
+            </div>
+            
             <div class="section-title">基本配置</div>
             <div class="form-group">
-                <label for="tableName">表名称</label>
+                <label for="tableName">表名</label>
                 <input type="text" class="form-control" id="tableName" required
-                       placeholder="请输入数据库表名">
+                       placeholder="例如: t_user">
             </div>
             <div class="form-group">
                 <label for="basePackage">基础包名</label>
                 <input type="text" class="form-control" id="basePackage" required
-                       placeholder="例如: com.example.project">
+                       placeholder="例如: com.example.demo">
             </div>
-
-            <div class="section-title">API模块配置</div>
+            
+            <div class="section-title">生成路径配置</div>
             <div class="form-group">
-                <label for="apiModulePath">API模块路径</label>
+                <label for="apiModulePath">API模块DTO路径</label>
                 <input type="text" class="form-control" id="apiModulePath" required
-                       placeholder="例如: /Users/username/project/api/src/main/java">
+                       placeholder="例如: /Users/username/project/api/src/main/java/api/dto">
             </div>
             <div class="form-group">
-                <label for="dtoDomainMapperPath">DTO-Domain转换器路径</label>
-                <input type="text" class="form-control" id="dtoDomainMapperPath" required
-                       placeholder="例如: /Users/username/project/api/src/main/java/converter/dto">
-            </div>
-
-            <div class="section-title">Service模块配置</div>
-            <div class="form-group">
-                <label for="serviceModulePath">Service模块路径</label>
+                <label for="serviceModulePath">Service模块基础路径</label>
                 <input type="text" class="form-control" id="serviceModulePath" required
                        placeholder="例如: /Users/username/project/service/src/main/java">
             </div>
@@ -140,10 +168,15 @@
                 <input type="text" class="form-control" id="repositoryImplPath" required
                        placeholder="例如: /Users/username/project/service/src/main/java/repository/impl">
             </div>
-            <div class="form-group">
+            <div class="form-group mybatis-field">
                 <label for="mybatisXmlPath">MyBatis XML文件路径</label>
                 <input type="text" class="form-control" id="mybatisXmlPath" required
                        placeholder="例如: /Users/username/project/service/src/main/resources/mapper">
+            </div>
+            <div class="form-group">
+                <label for="dtoDomainMapperPath">DTO-Domain转换器路径</label>
+                <input type="text" class="form-control" id="dtoDomainMapperPath" required
+                       placeholder="例如: /Users/username/project/service/src/main/java/converter/dto">
             </div>
 
             <div class="btn-container">
@@ -161,6 +194,15 @@
 
     <script type="text/javascript">
     $(document).ready(function() {
+        // 根据持久化框架切换显示相关字段
+        $('input[name="framework"]').change(function() {
+            if ($(this).val() === 'mybatis') {
+                $('.mybatis-field').show();
+            } else {
+                $('.mybatis-field').hide();
+            }
+        });
+        
         $('#generateBtn').on('click', function() {
             const formData = {
                 tableName: $('#tableName').val(),
@@ -174,11 +216,12 @@
                 repositoryPath: $('#repositoryPath').val(),
                 repositoryImplPath: $('#repositoryImplPath').val(),
                 mybatisXmlPath: $('#mybatisXmlPath').val(),
-                dtoDomainMapperPath: $('#dtoDomainMapperPath').val()
+                dtoDomainMapperPath: $('#dtoDomainMapperPath').val(),
+                framework: $('input[name="framework"]:checked').val() // 添加框架选择
             };
-
+            
             console.log('发送的数据：', formData);
-
+            
             const btn = $(this);
             btn.prop('disabled', true)
                .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 生成中...');
@@ -200,9 +243,18 @@
                             confirmButtonText: '确定'
                         });
                     } else if (response.needMerge) {
-                        window.open('/generator/diff?diffs=' + encodeURIComponent(JSON.stringify(response.diffs)), 
-                            'DiffWindow', 
-                            'width=1200,height=800,scrollbars=yes,resizable=yes');
+                        Swal.fire({
+                            title: '需要确认',
+                            text: '发现已存在的文件有差异，需要确认如何处理',
+                            icon: 'warning',
+                            confirmButtonText: '查看差异',
+                            showCancelButton: true,
+                            cancelButtonText: '取消'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.open('/generator/diff?diffs=' + encodeURIComponent(JSON.stringify(response.diffs)), '_blank');
+                            }
+                        });
                     } else {
                         Swal.fire({
                             title: '错误',
@@ -229,4 +281,5 @@
     });
     </script>
 </body>
+</html>
 </html>

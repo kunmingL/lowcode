@@ -148,9 +148,7 @@ public class DatabaseService {
             case Types.LONGVARBINARY:
                 return "byte[]";
             case Types.DATE:
-                return "LocalDate";
             case Types.TIME:
-                return "LocalTime";
             case Types.TIMESTAMP:
                 return "LocalDateTime";
             default:

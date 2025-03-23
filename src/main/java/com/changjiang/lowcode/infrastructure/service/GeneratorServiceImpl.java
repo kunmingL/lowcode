@@ -31,6 +31,10 @@ public class GeneratorServiceImpl implements GeneratorService {
     private final FileDiffService fileDiffService;
     private GeneratorRequest request;
     
+    // 在类的开始添加常量
+    private static final String FRAMEWORK_MYBATIS = "mybatis";
+    private static final String FRAMEWORK_JPA = "jpa";
+    
     /**
      * 生成代码
      * @param request 生成请求参数
@@ -158,6 +162,7 @@ public class GeneratorServiceImpl implements GeneratorService {
         names.put("domain", baseName);              // UserInfo
         names.put("po", baseName + "PO");          // UserInfoPO
         names.put("mapper", baseName + "Mapper");   // UserInfoMapper
+        names.put("dao", baseName + "Dao");        // UserInfoDao (JPA)
         names.put("converter", baseName + "Converter"); // UserInfoConverter
         names.put("repository", baseName + "Repository"); // UserInfoRepository
         names.put("repositoryImpl", baseName + "RepositoryImpl"); // UserInfoRepositoryImpl
@@ -204,29 +209,45 @@ public class GeneratorServiceImpl implements GeneratorService {
     }
     
     private void generatePo(TableInfo tableInfo, String basePackage) throws Exception {
+        // 选择合适的模板
+        String templateName = request.getFramework().equals(FRAMEWORK_JPA) 
+            ? "jpa-entity.ftl" : "po.ftl";
+        
         Map<String, String> names = getClassNames(tableInfo);
         Map<String, Object> model = new HashMap<>();
-        model.put("package", basePackage + ".infrastructure.persistence.po");
+        String packageName = extractPackageNameFromPath(request.getPoPath());
+        model.put("package", packageName);
         model.put("basePackage", basePackage);
         model.put("table", tableInfo);
         model.put("names", names);
         
         String fileName = names.get("po") + ".java";
         String fullPath = request.getPoPath() + "/" + fileName;
-        processTemplate("po.ftl", model, fullPath);
+        processTemplate(templateName, model, fullPath);
     }
     
     private void generateMapper(TableInfo tableInfo, String basePackage) throws Exception {
+        // 选择合适的模板
+        String templateName = request.getFramework().equals(FRAMEWORK_JPA) 
+            ? "jpa-dao.ftl" : "mapper.ftl";
+        
         Map<String, String> names = getClassNames(tableInfo);
         Map<String, Object> model = new HashMap<>();
-        model.put("package", basePackage + ".infrastructure.dao");
+        
+        // 从完整路径中提取包名
+        String packageName = extractPackageNameFromPath(request.getDaoPath());
+        model.put("package", packageName);
         model.put("basePackage", basePackage);
         model.put("table", tableInfo);
         model.put("names", names);
         
-        String fileName = names.get("mapper") + ".java";
+        // 文件名根据框架选择
+        String fileName = request.getFramework().equals(FRAMEWORK_JPA) 
+            ? names.get("dao") + ".java" 
+            : names.get("mapper") + ".java";
+        
         String fullPath = request.getDaoPath() + "/" + fileName;
-        processTemplate("mapper.ftl", model, fullPath);
+        processTemplate(templateName, model, fullPath);
     }
     
     private void generateConverter(TableInfo tableInfo, String basePackage) throws Exception {
@@ -246,11 +267,13 @@ public class GeneratorServiceImpl implements GeneratorService {
         Map<String, String> names = getClassNames(tableInfo);
         Map<String, Object> model = new HashMap<>();
         
-        // 生成 Repository 接口
-        model.put("package", basePackage + ".domain.repository");
+        String packageName = extractPackageNameFromPath(request.getRepositoryPath());
+        model.put("package", packageName);
         model.put("basePackage", basePackage);
         model.put("table", tableInfo);
         model.put("names", names);
+        // 添加框架类型信息到模板
+        model.put("framework", request.getFramework());
         
         String fileName = names.get("repository") + ".java";
         String fullPath = request.getRepositoryPath() + "/" + fileName;
@@ -258,24 +281,36 @@ public class GeneratorServiceImpl implements GeneratorService {
     }
     
     private void generateRepositoryImpl(TableInfo tableInfo, String basePackage) throws Exception {
+        // 选择合适的模板
+        String templateName = request.getFramework().equals(FRAMEWORK_JPA) 
+            ? "jpa-repository-impl.ftl" : "repository-impl.ftl";
+        
         Map<String, String> names = getClassNames(tableInfo);
         Map<String, Object> model = new HashMap<>();
         
         // 生成 Repository 实现类
-        model.put("package", basePackage + ".infrastructure.repository");
+        String packageName = extractPackageNameFromPath(request.getRepositoryImplPath());
+        model.put("package", packageName);
         model.put("basePackage", basePackage);
         model.put("table", tableInfo);
         model.put("names", names);
         
+        // 添加DAO的包路径
+        String daoPackage = extractPackageNameFromPath(request.getDaoPath());
+        model.put("daoPackage", daoPackage);
+        
         String fileName = names.get("repositoryImpl") + ".java";
         String fullPath = request.getRepositoryImplPath() + "/" + fileName;
-        processTemplate("repository-impl.ftl", model, fullPath);
+        processTemplate(templateName, model, fullPath);
     }
     
     private void generateMybatisXml(TableInfo tableInfo, String basePackage) throws Exception {
         Map<String, String> names = getClassNames(tableInfo);
         Map<String, Object> model = new HashMap<>();
-        model.put("package", basePackage + ".infrastructure.mapper");
+        
+        // 使用DAO路径作为Mapper的包路径
+        String packageName = extractPackageNameFromPath(request.getDaoPath());
+        model.put("package", packageName);
         model.put("basePackage", basePackage);
         model.put("table", tableInfo);
         model.put("names", names);
@@ -288,7 +323,10 @@ public class GeneratorServiceImpl implements GeneratorService {
     private void generateDtoDomainMapper(TableInfo tableInfo, String basePackage) throws Exception {
         Map<String, String> names = getClassNames(tableInfo);
         Map<String, Object> model = new HashMap<>();
-        model.put("package", basePackage + ".infrastructure.converter.dto");
+        
+        // 从DTO-Domain转换器路径中提取包名
+        String packageName = extractPackageNameFromPath(request.getDtoDomainMapperPath());
+        model.put("package", packageName);
         model.put("basePackage", basePackage);
         model.put("table", tableInfo);
         model.put("names", names);
@@ -348,7 +386,11 @@ public class GeneratorServiceImpl implements GeneratorService {
             generateConverter(tableInfo, basePackage);
             generateRepository(tableInfo, basePackage);
             generateRepositoryImpl(tableInfo, basePackage);
-            generateMybatisXml(tableInfo, basePackage);
+            
+            // 仅在MyBatis模式下生成XML文件
+            if (FRAMEWORK_MYBATIS.equals(request.getFramework()) && request.getMybatisXmlPath() != null) {
+                generateMybatisXml(tableInfo, basePackage);
+            }
             
             log.info("所有文件生成完成");
         } catch (Exception e) {
@@ -378,5 +420,35 @@ public class GeneratorServiceImpl implements GeneratorService {
             default:
                 return basePackage + ".infrastructure.dao";
         }
+    }
+
+    /**
+     * 从完整文件路径中提取包名
+     * 例如: D:\IDEA_PROJECT\elearning\elearn-service\src\main\java\com\changjiang\elearn\infrastructure\dao
+     * 提取为: com.changjiang.elearn.infrastructure.dao
+     */
+    private String extractPackageNameFromPath(String path) {
+        // 查找java目录后的内容
+        int javaIndex = path.indexOf("java");
+        if (javaIndex >= 0) {
+            String packagePath = path.substring(javaIndex + 5); // 跳过"java/"
+            // 替换路径分隔符为点
+            return packagePath.replace('\\', '.').replace('/', '.');
+        }
+        
+        // 如果找不到java目录，尝试直接使用最后几级目录
+        String[] parts = path.replace('\\', '/').split("/");
+        StringBuilder packageName = new StringBuilder();
+        
+        // 从末尾开始，最多取3级目录作为包名
+        int start = Math.max(0, parts.length - 3);
+        for (int i = start; i < parts.length; i++) {
+            if (packageName.length() > 0) {
+                packageName.append(".");
+            }
+            packageName.append(parts[i]);
+        }
+        
+        return packageName.toString();
     }
 } 
